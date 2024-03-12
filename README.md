@@ -20,28 +20,38 @@ go get github.com/intrinsic-org/intrinsic-go
 ## Usage
 
 ```go
+
+package main
+
 import (
-  "github.com/intrinsic-org/intrinsic-go"
-  intrinsicclient "github.com/intrinsic-org/intrinsic-go/client"
-  "github.com/intrinsic-org/intrinsic-go/option"
+	"context"
+	"log"
+
+	intrinsicgoclient "github.com/intrinsic-org/intrinsic-go/client"
+	"github.com/intrinsic-org/intrinsic-go/option"
 )
 
-client := intrinsicclient.NewClient(
-  option.WithAPIKey("<YOUR_API_KEY>"),
-)
+func main() {
+	client := intrinsicgoclient.NewClient(
+		option.WithAPIKey("<YOUR_API_KEY>"),
+	)
 
-response, err := client.EventTypes.CreateEventType(
-  context.TODO(),
-  &intrinsic.CreateEventTypeRequest{
-    Name: "example",
-    Fields: []*intrinsic.EventTypeField{
-      {
-        FieldName: "field",
-        Type:      intrinsic.EventTypeFieldTypeString,
-      },
-    },
-  },
-)
+	response, err := client.Events.CreateEventSync(
+		context.TODO(),
+		"new_text",
+		map[string]interface{}{
+			"caption": "text_content",
+		},
+	)
+
+	if err != nil {
+		log.Fatalf("Error creating event: %v", err)
+	}
+
+	// Assuming the 'response' variable contains useful information you'd like to log or use
+	log.Printf("Created event : %+v", response)
+}
+
 ```
 
 ## Timeouts
@@ -75,7 +85,7 @@ configuring authorization tokens, or providing your own instrumented `*http.Clie
 these options are shown below:
 
 ```go
-client := intrinsicclient.NewClient(
+client := intrinsicgoclient.NewClient(
   option.WithAPIKey("<YOUR_API_KEY>"),
   option.WithHTTPClient(
     &http.Client{
@@ -89,17 +99,12 @@ These request options can either be specified on the client so that they're appl
 request (shown above), or for an individual request like so:
 
 ```go
-response, err := client.EventTypes.CreateEventType(
-  ctx,
-  &intrinsic.CreateEventTypeRequest{
-    Name: "example",
-    Fields: []*intrinsic.EventTypeField{
-      {
-        FieldName: "field",
-        Type:      intrinsic.EventTypeFieldTypeString,
-      },
-    },
-  },
+response, err := client.Events.CreateEventSync(
+		context.TODO(),
+		"new_text",
+		map[string]interface{}{
+			"caption": "text_content",
+		},
   option.WithAPIKey("<YOUR_API_KEY>"),
 )
 ```
@@ -126,7 +131,7 @@ your liking. For example, if you want to disable retries for the client entirely
 set this value to 1 like so:
 
 ```go
-client := intrinsicclient.NewClient(
+client := intrinsicgoclient.NewClient(
   option.WithMaxAttempts(1),
 )
 ```
@@ -134,17 +139,12 @@ client := intrinsicclient.NewClient(
 This can be done for an individual request, too:
 
 ```go
-response, err := client.EventTypes.CreateEventType(
-  ctx,
-  &intrinsic.CreateEventTypeRequest{
-    Name: "example",
-    Fields: []*intrinsic.EventTypeField{
-      {
-        FieldName: "field",
-        Type:      intrinsic.EventTypeFieldTypeString,
-      },
-    },
-  },
+	response, err := client.Events.CreateEventSync(
+		context.TODO(),
+		"new_text",
+		map[string]interface{}{
+			"caption": "text_content",
+		},
   option.WithMaxAttempts(1),
 )
 ```
@@ -155,22 +155,20 @@ Structured error types are returned from API calls that return non-success statu
 you can check if the error was due to a bad request (i.e. status code 400) with the following:
 
 ```go
-response, err := client.EventTypes.CreateEventType(
-  ctx,
-  &intrinsic.CreateEventTypeRequest{
-    Name: "example",
-    Fields: []*intrinsic.EventTypeField{
-      {
-        FieldName: "invalid field",
-      },
-    },
+response, err := client.Events.CreateEventSync(
+  context.TODO(),
+  "not_a_real_event_type",
+  map[string]interface{}{
+    "caption": "text_content",
   },
 )
+
 if err != nil {
-  if badRequestErr, ok := err.(*intrinsic.BadRequestError);
+  if notFoundError, ok := err.(*intrinsic.NotFoundError); ok {
     // Do something with the bad request ...
+    log.Printf("Not Found : %+v", notFoundError)
   }
-  return err
+  log.Fatalf("Error creating event : %+v", err)
 }
 ```
 
@@ -178,45 +176,23 @@ These errors are also compatible with the `errors.Is` and `errors.As` APIs, so y
 like so:
 
 ```go
-response, err := client.EventTypes.CreateEventType(
-  ctx,
-  &intrinsic.CreateEventTypeRequest{
-    Name: "example",
-    Fields: []*intrinsic.EventTypeField{
-      {
-        FieldName: "invalid field",
-      },
-    },
+
+response, err := client.Events.CreateEventSync(
+  context.TODO(),
+  "not_a_real_event_type",
+  map[string]interface{}{
+    "caption": "text_content",
   },
 )
 if err != nil {
-  var badRequestErr *intrinsic.BadRequestError
-  if errors.As(err, badRequestErr) {
-    // Do something with the bad request ...
+  var notFoundError *intrinsic.NotFoundError
+  if errors.As(err, &notFoundError) {
+    log.Printf("Not Found Error : %+v", notFoundError)
   }
-  return err
+  log.Fatalf("Failed to create event : %s", err)
 }
 ```
 
-If you'd like to wrap the errors with additional information and still retain the ability
-to access the type with `errors.Is` and `errors.As`, you can use the `%w` directive:
-
-```go
-response, err := client.EventTypes.CreateEventType(
-  ctx,
-  &intrinsic.CreateEventTypeRequest{
-    Name: "example",
-    Fields: []*intrinsic.EventTypeField{
-      {
-        FieldName: "invalid field",
-      },
-    },
-  },
-)
-if err != nil {
-  return fmt.Errorf("failed to create event type: %w", err)
-}
-```
 
 ## Contributing
 
