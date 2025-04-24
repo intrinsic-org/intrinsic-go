@@ -1,3 +1,9 @@
+# !!DEPRECATED!! Please consider to use your language's native HTTP client to integrate with Variance
+
+We are now encouraging our customers to use the native HTTP client to call our endpoints directly, given we only have
+one endpoint and it is not worth having a SDK as an extra layer of indirection that could be a point of failure.
+
+
 # Intrinsic Go Library
 
 [![fern shield](https://img.shields.io/badge/%F0%9F%8C%BF-SDK%20generated%20by%20Fern-brightgreen)](https://github.com/fern-api/fern)
