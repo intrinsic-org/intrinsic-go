@@ -8,11 +8,12 @@ import (
 	json "encoding/json"
 	errors "errors"
 	fmt "fmt"
+	io "io"
+	http "net/http"
+
 	intrinsicgo "github.com/intrinsic-org/intrinsic-go"
 	core "github.com/intrinsic-org/intrinsic-go/core"
 	option "github.com/intrinsic-org/intrinsic-go/option"
-	io "io"
-	http "net/http"
 )
 
 type Client struct {
@@ -160,6 +161,13 @@ func (c *Client) CreateEventAsync(
 			return value
 		case 404:
 			value := new(intrinsicgo.NotFoundError)
+			value.APIError = apiError
+			if err := decoder.Decode(value); err != nil {
+				return apiError
+			}
+			return value
+		case 409:
+			value := new(intrinsicgo.ConflictError)
 			value.APIError = apiError
 			if err := decoder.Decode(value); err != nil {
 				return apiError

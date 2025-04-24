@@ -4,6 +4,7 @@ package intrinsic
 
 import (
 	json "encoding/json"
+
 	core "github.com/intrinsic-org/intrinsic-go/core"
 )
 
@@ -97,4 +98,27 @@ func (n *NotFoundError) MarshalJSON() ([]byte, error) {
 
 func (n *NotFoundError) Unwrap() error {
 	return n.APIError
+}
+
+type ConflictError struct {
+	*core.APIError
+	Body *ErrorSchema
+}
+
+func (c *ConflictError) UnmarshalJSON(data []byte) error {
+	var body *ErrorSchema
+	if err := json.Unmarshal(data, &body); err != nil {
+		return err
+	}
+	c.StatusCode = 409
+	c.Body = body
+	return nil
+}
+
+func (c *ConflictError) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.Body)
+}
+
+func (c *ConflictError) Unwrap() error {
+	return c.APIError
 }
